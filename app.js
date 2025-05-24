@@ -1,9 +1,11 @@
 const request = require('request-promise');
 const cheerio = require('cheerio');
-
+const { Parser } = require('json2csv');
+const XLSX = require('xlsx');
+const fs = require('fs');
 
 let empresasArray = [];
-let paginacionArray = [];
+// let paginacionArray = [];
 let resultadosArray = []; 
 
 // REALIZAR 
@@ -49,8 +51,41 @@ let resultadosArray = [];
         // div.row > div.quote > div.col-md-8 > span.text
         let tags = $(elem).find('div.tags > a.tag').map((i, el) => $(el).text().trim()).get();
         console.log('Tags obtenidos:', tags.join(', '));
+
+        let objectoData = {
+                    quote:quote,
+                    author:author,
+                    tags:tags, 
+                    
+                }
+                resultadosArray.push(objectoData);
         });
         
+        let data = JSON.stringify(resultadosArray, null, 2); 
+
+        fs.writeFileSync('resultadosObject.json',data);
+        console.log('archivo json terminado');
+
+        const fields = ['quote','author','tags'];
+
+            const json2csv = new Parser({
+                fields: fields,
+                defaultValue:'No ay INFO'
+            })
+
+
+        const csv = json2csv.parse(resultadosArray);
+        fs.writeFileSync('quotes.csv', csv, 'utf-8');
+        console.log('archivo CSV creado');
+
+        const worksheet = XLSX.utils.json_to_sheet(resultadosArray);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(
+        workbook, worksheet,'Scrape');
+        XLSX.writeFile(workbook,'resultados.xlsx');
+        console.log('archivo exel creado ');
+        
+
         } catch (error) {
             console.log("error",error);
             console.log('error',error);
